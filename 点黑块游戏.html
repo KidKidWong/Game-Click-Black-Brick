@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="jquery-3.2.1.js"></script>
+    <style>
+       #main{
+         width: 400px;
+         height: 400px;
+         background-color: white;
+           border: 2px solid #000;
+           margin: 0 auto;
+           position: relative;
+           overflow: hidden;
+       }
+        #container{
+            width: 100%;
+            height: 400px;
+            position: relative;
+            top: -100px;/*container从-100的位置开始往下滚动*/
+            background-color: white;
+        }
+        .row{
+            width: 100%;
+            height: 100px;
+        }
+        .cell{
+            width: 100px;
+            height: 100px;
+            float: left;}
+        .black{
+            background-color: black;
+        }
+        h1{
+            text-align: center;}
+    </style>
+</head>
+<body>
+<div><h1>0</h1></div>
+<div id="main">
+    <div id="container"></div><!--注意container须把空白节点去掉，不然会被当成一个文本节点。
+    下文的container子节点就会把这个空白节点也算上去，因为下文须删掉最后一个子节点，
+    删了也相当于没删。造成错误-->
+</div>
+</body>
+<script>
+    var state=0;//游戏状态初始化。0=初始化 1=开始 3=结束
+
+    var speed=2;//将速度定义成变量，以便我们控制速度的快慢
+
+    //计分
+    function score() {
+        var newScore=parseInt($("h1").html())+1;//从原来的基础上加1分。从h1得到原来的分数
+        $("h1").html(newScore);//将新分数再赋给h1的值
+        if(newScore % 10 == 0){ //总分是20的整数倍的时候就会使用一次加速函数
+            accelerate();//使用加速函数，速度会上升一个层次
+        }
+    }
+    //此函数负责创建div
+    function createDiv(className){
+        var div=document.createElement("div");
+        div.className=className;
+        return div;
+    }
+    //此函数负责创建row和cell
+    function createRow() {
+        var row=createDiv("row");
+        var classes=createArr();//得到数组，里面总有一个是黑色类名
+        for(var i=0;i<4;i++){
+            var cell=createDiv(classes[i]);
+            row.append(cell);
+        }
+        var container=document.getElementById("container");
+        if(container.firstChild == null){
+            $("#container").append(row);
+        }else{
+            $("#container").prepend(row);
+        }
+
+    }
+    //数组中总有一个是cell black（黑色类名）
+    function createArr() {
+        var arr=["cell","cell","cell","cell"];
+        var index=Math.floor(Math.random()*4);//得到0-3
+        arr[index]="cell black";
+        return arr;
+    }
+    //执行4次，产生4行
+    for(var i=0;i<4;i++){
+        createRow();
+    }
+    //使container向下移动
+    function move() {
+        var height=parseInt($("#container").css("top"));//获取container实际的top
+        if(speed+height > 0){ //speed+height>0表示一步就能走过height=0了，这时下面的height=0的判断就无法生效
+            height=0
+        }else{
+            height+=speed;//让top自增2px。这里的2是影响速度的.100能除尽的，不然跑不了
+        }
+        $("#container").css("top",height+"px");//将自增以后的top返回给container
+
+        if(height == 0){
+            createRow();//当container向下移动100px以后，立刻在container的最前面插入新的一行
+            $("#container").css("top","-100px");/*插入新的一行后，container的top是0，
+            所以container会被立刻扯到0的位置。所以要设置top=-100，不然
+            新添加的一行会立刻跑到0的位置*/
+            if(container.childNodes.length == 6){
+                container.removeChild(container.lastChild);}
+            //这里删掉已经退出视线了的最后一行
+        }else if(height == -100+speed){
+            /*if($("#container").children().last().pass !== 1){
+                alert("游戏结束")}*///最后一行的pass不等于1代表黑块下去了
+            var rows=container.childNodes;
+            if((rows.length==5) && (rows[rows.length-1].pass !== 2)){//不加rows.length这个条件的话一开始就会自动结束游戏
+                alert("触礁");
+                clearInterval(clock);
+                state=3;
+            }
+            }
+    }
+    var clock=null;//定义一个全局变量，为将来关闭定时器做准备
+    var container=document.getElementById("container");
+
+    //利用定时器让container自动向下移动
+    function start() {
+        clock=setInterval(move,30);
+    }
+    //点击黑块变白色
+   $("#main").click(function (event) {
+      judge(event);
+    })
+    function judge(event) {
+        if(state == 3){
+            alert("失败者禁入");
+            return;
+        }
+        if(event.target.className.indexOf("black") == -1){//判断点击的是否是白块
+            clearInterval(clock);
+            state=3;
+            alert("Game Over");
+        }else{
+            event.target.className="cell";//为什么不能用：event.target.removeClass("black")?
+            score();//加1分
+            event.target.parentNode.pass=2;
+        }
+    }
+    //加速函数
+    /*
+    function accelerate() {
+        if(speed==2){
+            speed=4;
+        }else if(speed==4){
+            speed=5;
+        }else if(speed==5){
+            speed=10;
+        }else if(speed==10){
+            speed=20;
+        }else{"您的电脑太慢了"}
+    }*/
+    function accelerate() {
+        speed+=1;//每次速度+2
+        if(speed==20){
+            alert("作弊了")
+        }
+    }
+    start();
+</script>
+</html>
